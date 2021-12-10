@@ -5,7 +5,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 
 public class Server {
@@ -35,6 +37,13 @@ public class Server {
 				
 				
 				new ServerThread(communicationSocket, dbConnection).start();
+				
+				
+				PreparedStatement statement1=dbConnection.prepareStatement(
+	                    "INSERT INTO korisnici " +
+	                            "(username,password,ime,prezime,JMBG,pol,email) " +
+	                            "VALUES ('djoka','djokacar','Djordje','Ivanovic','023232','M','232@sd')", Statement.RETURN_GENERATED_KEYS);
+	            statement1.execute();
 			}
 			
 		} catch (SQLException e) {
