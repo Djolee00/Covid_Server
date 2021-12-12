@@ -33,7 +33,7 @@ public class Server {
 			while(true) {
 				System.out.println("Waiting for connection...");
 				communicationSocket = welcomeSocket.accept();
-				System.out.println("Connection with client established");
+				System.out.println("Connection with client established\n");
 				
 				
 				new ServerThread(communicationSocket, dbConnection).start();

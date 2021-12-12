@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -37,8 +38,8 @@ public class ServerThread extends Thread {
 
 		clientOutput.println("***MAIN MENU***" 
 				+ "\n\n1. Register"
-				+ "\n2. Login" 
-				+ "\n3. Login as Administrator"
+				+ "\n2.Login" 
+				+ "\n3.Login as Administrator"
 				+ "\n\nTo exit application at eny time, please type:" 
 				+ "\n***exit" 
 				+ "\n\nTo get back to main menu, please type:" 
@@ -70,7 +71,7 @@ public class ServerThread extends Thread {
 				registerMenu();
 				break;
 			case "2":
-
+				logInMenu();
 				break;
 			case "3":
 
@@ -92,6 +93,9 @@ public class ServerThread extends Thread {
 		String gender;
 		String email;
 		boolean valid = false;
+		int firstDose =0;
+		int secondDose = 0;
+		int thirdDose = 0;
 
 		clientOutput.println("\n\n***WELCOME, PLEASE FILL REGISTRAION FORM***");
 
@@ -110,11 +114,12 @@ public class ServerThread extends Thread {
 					return;
 				}
 				
-				if(username.contains(" ")) {
-					clientOutput.println("Please enter username withoud spaces! Try again");
+				if(username.equals("") || username.contains(" ")) {
+					clientOutput.println("Invalid input! Try again");
 					continue;
 				}
 
+				
 				if(!isUsernameUnique(username)) {
 					clientOutput.println("Username already exist. Try again");
 				}else {
@@ -139,7 +144,13 @@ public class ServerThread extends Thread {
 					return;
 				}
 				
-			}while(password.length()<5);
+				if(password.length()>=5) {
+					valid = true;
+				}else {
+					clientOutput.println("Invalid input. Try again");
+				}
+				
+			}while(!valid);
 			
 			valid = false;
 			
@@ -161,7 +172,7 @@ public class ServerThread extends Thread {
 					clientOutput.println("Invalid input, try again!");
 				}else {
 					valid = true;
-					String[] nameSurname = s.split(" ");
+					String[] nameSurname = s.split(" ",2);
 					name = nameSurname[0];
 					surname = nameSurname[1];
 				}
@@ -247,16 +258,224 @@ public class ServerThread extends Thread {
 				
 			}while(!valid);
 			
-			User user= new User(username, password, name, surname, personalID, gender, email);
-			System.out.println(user);
+			clientOutput.println("***\n\nFIRST DOSE***");
+			firstDose=vaccineChoiceMenu();
+	
+			if(firstDose == -1) {
+				return;
+			}
 			
+			if(firstDose == -2) {
+				clientOutput.println("\n\n");
+				menu();
+				return;
+			}
+
+			valid =false;
+			if(firstDose > 0) {
+				clientOutput.println("***SECOND DOSE***\n");
+				clientOutput.println("Have you been vaccinated with second dose?"
+						+ "\n\n1.Yes\n2.No");
+				String choice;
+				do {
+					clientOutput.println("Answer: ");
+					choice=clientInput.readLine();
+					if(isExit(choice)) {
+						return;
+					}
+					if(isReturn(choice)) {
+						clientOutput.println("\n\n");
+						menu();
+						return;
+					}
+					
+					if(choice!=null)
+						switch (choice){
+							case "1":
+								valid=true;
+								secondDose = firstDose;
+								break;
+							case "2":
+								valid = true;
+								break;
+							default:
+								clientOutput.println("Invalid input try again");
+					}
+				}while(!valid);
+			}
+			
+			if(secondDose>0) {
+				clientOutput.println("***THIRD DOSE***\n");
+				thirdDose = vaccineChoiceMenu();
+				if(thirdDose == -1) {
+					return;
+				}
+				
+				if(thirdDose == -2) {
+					clientOutput.println("\n\n");
+					menu();
+					return;
+				}
+			}
+			
+			addUserInDatabase(username,password,name,surname,personalID,gender,email,firstDose,secondDose,thirdDose);
+			menu();
 		} catch (IOException ex) {
 			clientOutput.println("Error while getting client input");
 		}
 	}
 	
+	//***LOGIN MENU***
+	
+	private void logInMenu() {
+		String username;
+		String password;
+		boolean valid = false;
+		
+		clientOutput.println("\n\n***LOGIN FORM***\n");
+		
+		try {
+			do {
+			clientOutput.println("Username: ");
+			username = clientInput.readLine();
+			
+			if(isExit(username)) {
+				return;
+			}
+			if(isReturn(username)) {
+				clientOutput.println("\n\n");
+				menu();
+				return;
+			}
+			
+			clientOutput.println("Password: ");
+			password = clientInput.readLine();
+			
+			if(isExit(password)) {
+				return;
+			}
+			if(isReturn(password)) {
+				clientOutput.println("\n\n");
+				menu();
+				return;
+			}
+			
+			getBackUserFromDatabase(username,password);
+			
+			if(user != null) {
+				valid = true;
+			}else {
+				clientOutput.println("Invalid username or password. Try again!");
+			}
+			
+			}while(!valid);
+		} catch (IOException e) {
+			clientOutput.println("Error while getting client input.");
+		}
+		
+		
+	}
+	
+	//***VACCINE CHOICE MENU***
+
+	private int vaccineChoiceMenu() {
+		clientOutput.println("\n1.Pfizer-BioNTech"
+				+ "\n2.Sputnik V"
+				+ "\n3.Sinopharm"
+				+ "\n4.AstraZeneca"
+				+ "\n0.Vaccine not received\n\n");
+		
+		String choice;
+		do {
+			clientOutput.println("Answer: ");
+			
+			try {
+				choice = clientInput.readLine();
+				
+				if(isExit(choice)) {
+					return -1;
+				}
+				
+				if(isReturn(choice)) {
+					return -2;
+				}
+				
+				if(choice!=null) {
+					switch(choice) {
+					case "1":
+						return 1;
+					case "2":
+						return 2;
+					case "3":
+						return 3;
+					case "4":
+						return 4;
+					case "0":
+						return 0;
+					default:
+						clientOutput.println("Invalid choice. Try again!");
+						break;				
+					}
+				}
+			} catch (IOException e) {
+				clientOutput.println("Error while getting client input!");
+			}
+	
+		}while(true);
+		
+	}
+
 
 	//***WORK WITH DATABASE***
+	
+	private void getBackUserFromDatabase(String username, String password) {
+		String query = "SELECT * FROM korisnici WHERE username ='"+username+"' AND password ='"+password+"'";
+		try (PreparedStatement statement = dbConnection.prepareStatement(query)){
+			
+			ResultSet result = statement.executeQuery(query); 
+			
+			if(result.next()) {
+				user = new User(result.getString(1), result.getString(2), result.getString(3), 
+						result.getString(4), result.getString(5),result.getString(6), result.getString(7),result.getInt(8), result.getInt(9),result.getInt(10));
+			}
+			
+		} catch (SQLException e) {
+			clientOutput.println("Error while searching database");
+			e.printStackTrace();
+		}
+	}
+	
+	private void addUserInDatabase(String username, String password, String name, String surname, String personalID,
+			String gender, String email, int firstDose, int secondDose, int thirdDose) {
+		String sqlInsert = "INSERT INTO korisnici (username,password,ime,prezime,JMBG,pol,email,prvaDoza,drugaDoza,trecaDoza) "
+				+ "VALUES (?,?,?,?,?,?,?,?,?,?)";
+		try (PreparedStatement statement = dbConnection.prepareStatement(sqlInsert)){
+			statement.setString(1, username);
+			statement.setString(2, password);
+			statement.setString(3, name);
+			statement.setString(4, surname);
+			statement.setString(5, personalID);
+			statement.setString(6, gender);
+			statement.setString(7, email);
+			statement.setInt(8, firstDose);
+			statement.setInt(9, secondDose);
+			statement.setInt(10, thirdDose);
+			
+			int rowCount = statement.executeUpdate();
+			
+			if(rowCount>0) {
+				System.out.println("New user: "+username+" has been successfully added to database");
+				clientOutput.println("Registration completed!");
+			}else {
+				System.out.println("New user could not be added");
+				clientOutput.println("Sorry, registraion failed");
+			}
+			
+		} catch (SQLException e) {
+			clientOutput.println("Error while adding new user to database");
+		}		
+	}
+	
 	private boolean isUsernameUnique(String username) {
 		boolean unique = true;
 		
