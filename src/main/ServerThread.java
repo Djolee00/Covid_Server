@@ -1,6 +1,6 @@
 package main;
 
-import java.awt.Choice;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,6 +22,7 @@ public class ServerThread extends Thread {
 	private Connection dbConnection = null;
 
 	private User user = null;
+	private Administrator admin = null;
 
 	// ***CONSTRUCTOR***
 
@@ -36,7 +37,7 @@ public class ServerThread extends Thread {
 
 		String clientChoice = null;
 
-		clientOutput.println("***\nMAIN MENU***" 
+		clientOutput.println("\n***MAIN MENU***" 
 				+ "\n\n1.Register"
 				+ "\n2.Login" 
 				+ "\n3.Login as Administrator"
@@ -74,13 +75,143 @@ public class ServerThread extends Thread {
 				logInMenu();
 				break;
 			case "3":
-
+				logInAsAdmin();
 				break;
 			default:
 				clientOutput.println("***Please enter valid input. Try again!***\n\n");
 				menu();
 				break;
 			}
+	}
+
+	//***LOGIN AS ADMIN
+	
+	private void logInAsAdmin() {
+		String username;
+		String password;
+		boolean valid = false;
+		
+		clientOutput.println("\n\n***LOGIN FORM***\n");
+		
+		try {
+			do {
+			clientOutput.println("Username: ");
+			username = clientInput.readLine();
+			
+			if(isExit(username)) {
+				return;
+			}
+			if(isReturn(username)) {
+				clientOutput.println("\n\n");
+				menu();
+				return;
+			}
+			
+			clientOutput.println("Password: ");
+			password = clientInput.readLine();
+			
+			if(isExit(password)) {
+				return;
+			}
+			if(isReturn(password)) {
+				clientOutput.println("\n\n");
+				menu();
+				return;
+			}
+			
+			
+			if(username.equals("admin") && password.equals("admin")) {
+				valid = true;
+				admin = new Administrator(dbConnection, clientOutput);
+			}else {
+				clientOutput.println("Invalid username or password. Try again!");
+			}
+			
+			}while(!valid);
+			
+			adminMenu();
+		} catch (IOException e) {
+			clientOutput.println("Error while getting client input.");
+		}
+		
+		
+	}
+	
+	//***ADMIN MENU***
+	private void adminMenu() {
+		String choice = null;
+		boolean valid = false;
+		
+		clientOutput.println("\n\n***WELCOME ADMIN***");
+		
+		clientOutput.println("Choose one option:");
+		clientOutput.println("1.Check if user possesses green certificate");
+		clientOutput.println("5.Log out");
+		
+		try {
+			do {
+			clientOutput.println("Answer: ");
+			if(communicationSocket!=null && !communicationSocket.isClosed())
+				choice = clientInput.readLine();
+			if(isExit(choice)) {
+				return;
+			}
+			if(isReturn(choice)) {
+				admin = null;
+				clientOutput.println("\n");
+				menu();
+				return;
+			}
+			
+			if(choice != null) {
+				switch(choice) {
+				case "1":
+					checkUserGreenStatus();
+					return;
+				case "2":
+					break;
+				case "3":
+					break;
+				case "4":
+					break;
+				case "5":
+					admin = null;
+					menu();
+					return;
+				default:
+					clientOutput.println("Invalid input try again!");
+					break;
+				}
+			}
+			
+			}while(!valid);
+			
+		}catch(IOException ex) {
+			clientOutput.println("Error while getting clien input");
+		}
+		
+	}
+
+	private void checkUserGreenStatus() throws IOException {
+		clientOutput.println("\nPlease enter user personal ID (type ***return to get back):");
+		String choice;
+		while(true) {
+			clientOutput.println("Personal ID: ");
+			choice =  clientInput.readLine();
+			if(choice == null) {
+				return;
+			}
+			if(isExit(choice)) {
+				return;
+			}
+			if(choice.equals("***return")) {
+				adminMenu();
+				return;
+			}
+			
+			admin.doesUserPossessValidCertificate(choice);
+		}
+		
 	}
 
 	// ***REGISTER MENU***
@@ -326,7 +457,6 @@ public class ServerThread extends Thread {
 	}
 	
 	//***LOGIN MENU***
-	
 	private void logInMenu() {
 		String username;
 		String password;
@@ -370,12 +500,12 @@ public class ServerThread extends Thread {
 			
 			}while(!valid);
 			
-			
+			userProfileMenu();
 		} catch (IOException e) {
 			clientOutput.println("Error while getting client input.");
 		}
 		
-		userProfileMenu();
+		
 		
 	}
 	
@@ -460,8 +590,8 @@ public class ServerThread extends Thread {
 		}
 	
 	}
-	//***ANSWER CHANGE MENU***
 	
+	//***ANSWER CHANGE MENU***
 	private void answerChangeMenu() {
 		int choice = 0;
 		String secondChoice = null;
@@ -548,7 +678,8 @@ public class ServerThread extends Thread {
 				updateThirdDose(choice);
 				user.setThirdDose(choice);
 			}
-		}else {
+		}
+		if(user.getThirdDose()>0) {
 			clientOutput.println("\nAll questions have been answered");
 		}
 		
