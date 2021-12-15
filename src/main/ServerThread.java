@@ -63,7 +63,8 @@ public class ServerThread extends Thread {
 			}
 
 		} catch (IOException e) {
-			System.out.println("In Main Menu client input error!");
+			System.err.println("Error while getting client input in Main Menu");
+			closeCommunication();
 		}
 
 		if (clientChoice != null)
@@ -131,7 +132,8 @@ public class ServerThread extends Thread {
 			
 			adminMenu();
 		} catch (IOException e) {
-			clientOutput.println("Error while getting client input.");
+			System.err.println("Error while getting client input in Admin Login Menu");
+			closeCommunication();
 		}
 		
 		
@@ -145,7 +147,8 @@ public class ServerThread extends Thread {
 		clientOutput.println("\n\n***WELCOME ADMIN***");
 		
 		clientOutput.println("Choose one option:");
-		clientOutput.println("1.Check if user possesses green certificate");
+		clientOutput.println("1.Check if user possesses green certificate\n2.List of users"
+				+ "\n3.Statistic of vaccination per dose\n4.2+ doses statistic per vaccine manufacturer");
 		clientOutput.println("5.Log out");
 		
 		try {
@@ -169,10 +172,13 @@ public class ServerThread extends Thread {
 					checkUserGreenStatus();
 					return;
 				case "2":
-					break;
+					showListOfUsers();
+					return;
 				case "3":
-					break;
+					showVacStatus();
+					return;
 				case "4":
+					showTwoPlusDosesStatistic();
 					break;
 				case "5":
 					admin = null;
@@ -187,9 +193,55 @@ public class ServerThread extends Thread {
 			}while(!valid);
 			
 		}catch(IOException ex) {
-			clientOutput.println("Error while getting clien input");
+			System.err.println("Error while getting client input in Admin Menu");
+			closeCommunication();
 		}
 		
+	}
+
+	private void showTwoPlusDosesStatistic() {
+		
+	}
+
+	private void showVacStatus() {
+		try {
+			String stat = admin.getNumbersPerDose();
+			
+			clientOutput.println("=============================================================\nVaccinated with only one, two or three doses\n=============================================================");
+			clientOutput.println(stat);
+			clientOutput.println("=============================================================");
+		} catch (SQLException e) {
+			clientOutput.println("Error while getting number of users per dose");
+		} finally {
+			adminMenu();
+		}
+	}
+
+	private void showListOfUsers() {
+		try {
+			String usersList = admin.getListOfUsers();
+			
+			if(usersList == null) {
+				clientOutput.println("*** There are no users in our system ***");
+				adminMenu();
+				return;
+			}
+			
+			String ulepsavanje="";
+			for(int i=1;i<=106;i++) {
+				ulepsavanje+="*";
+			}
+			clientOutput.println(ulepsavanje);
+			clientOutput.println(usersList);
+			clientOutput.println(ulepsavanje);
+			
+		
+			
+		} catch (SQLException e) {
+			clientOutput.println("Error while getting list of users");
+		}finally {
+			adminMenu();
+		}
 	}
 
 	private void checkUserGreenStatus() throws IOException {
@@ -214,6 +266,7 @@ public class ServerThread extends Thread {
 		
 	}
 
+	//***REGISTER MENU***
 	// ***REGISTER MENU***
 	private void registerMenu() {
 		String username;
@@ -389,7 +442,7 @@ public class ServerThread extends Thread {
 				
 			}while(!valid);
 			
-			clientOutput.println("***\n\nFIRST DOSE***");
+			clientOutput.println("\n\n***FIRST DOSE***");
 			firstDose=vaccineChoiceMenu();
 	
 			if(firstDose == -1) {
@@ -452,7 +505,8 @@ public class ServerThread extends Thread {
 			addUserInDatabase(username,password,name,surname,personalID,gender,email,firstDose,secondDose,thirdDose);
 			menu();
 		} catch (IOException ex) {
-			clientOutput.println("Error while getting client input");
+			System.err.println("Error while getting client input in Register Menu");
+			closeCommunication();
 		}
 	}
 	
@@ -502,7 +556,8 @@ public class ServerThread extends Thread {
 			
 			userProfileMenu();
 		} catch (IOException e) {
-			clientOutput.println("Error while getting client input.");
+			System.err.println("Error while getting client input in Login menu");
+			closeCommunication();
 		}
 		
 		
@@ -569,7 +624,8 @@ public class ServerThread extends Thread {
 			}while(!isValid);
 			
 		} catch (IOException e) {
-			clientOutput.println("Error while getting client input");
+			System.err.println("Error while getting client input in User Profile");
+			closeCommunication();
 		}
 		
 		if(choice!=null) {
@@ -653,7 +709,8 @@ public class ServerThread extends Thread {
 				}
 			}while(!valid);
 			}catch (IOException e) {
-				clientOutput.println("Error while getting client input");
+				System.err.println("Error while getting client input in Answer Change Menu");
+				closeCommunication();
 			}
 		}
 		
@@ -680,7 +737,7 @@ public class ServerThread extends Thread {
 			}
 		}
 		if(user.getThirdDose()>0) {
-			clientOutput.println("\nAll questions have been answered");
+			clientOutput.println("\n============================\nAll questions have been answered\n============================");
 		}
 		
 	}
@@ -726,7 +783,8 @@ public class ServerThread extends Thread {
 					}
 				}
 			} catch (IOException e) {
-				clientOutput.println("Error while getting client input!");
+				System.err.println("Error while getting client input in Vaccine Choice Menu");
+				closeCommunication();
 			}
 	
 		}while(true);
@@ -801,7 +859,7 @@ public class ServerThread extends Thread {
 			
 		} catch (SQLException e) {
 			clientOutput.println("Error while searching database");
-			e.printStackTrace();
+			closeCommunication();
 		}
 	}
 	
@@ -853,6 +911,7 @@ public class ServerThread extends Thread {
 			}
 		}catch (SQLException e) {
 			System.out.println("DB Error - username search");
+			closeCommunication();
 		}
 		
 		return unique;
@@ -874,7 +933,8 @@ public class ServerThread extends Thread {
 				}
 			}
 		}catch (SQLException e) {
-			System.out.println("DB Error - personal ID search");
+			System.err.println("DB Error - personal ID search");
+			closeCommunication();
 		}
 		
 		return unique;
@@ -885,9 +945,13 @@ public class ServerThread extends Thread {
 	
 	private void checkGreenCertificate() {
 		if(user.getSecondDose() > 0) {
-			clientOutput.println("\nYou possess valid green certificate");
+			clientOutput.println("*********************************************\n"
+					+ "You possess valid green certificate\n********************************************");
 		}else {
-			clientOutput.println("\nYou don't possess valid green cerficate, because you didn't get second dose");
+			clientOutput.println(""
+					+ "**************************************************************************\n"
+					+ "You don't possess valid green cerficate, because you didn't get second dose\n"
+					+ "**************************************************************************");
 		}
 	}
 
@@ -925,6 +989,7 @@ public class ServerThread extends Thread {
 	private void closeCommunication() {
 		try {
 			clientOutput.println(">> Goodbye");
+			System.err.println("Client has been disconnected");
 			communicationSocket.close();
 		} catch (IOException e) {
 			System.out.println("Error while closing communication socket with client");
