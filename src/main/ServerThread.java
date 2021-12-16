@@ -179,7 +179,7 @@ public class ServerThread extends Thread {
 					return;
 				case "4":
 					showTwoPlusDosesStatistic();
-					break;
+					return;
 				case "5":
 					admin = null;
 					menu();
@@ -200,7 +200,15 @@ public class ServerThread extends Thread {
 	}
 
 	private void showTwoPlusDosesStatistic() {
-		
+		try {
+			clientOutput.println("2+ doses per manufacturer");
+			String statistic = admin.getNumbersPerManufacturer();
+			clientOutput.println(statistic);
+			adminMenu();
+			return;
+		} catch (SQLException e) {
+			clientOutput.println("Error while getting statistic for manufacturers");
+		}
 	}
 
 	private void showVacStatus() {
@@ -266,7 +274,7 @@ public class ServerThread extends Thread {
 		
 	}
 
-	//***REGISTER MENU***
+	
 	// ***REGISTER MENU***
 	private void registerMenu() {
 		String username;
@@ -942,6 +950,10 @@ public class ServerThread extends Thread {
 	
 
 	// ***CHECK Methods***
+	
+	private boolean isDateValid(String s) {
+		return false;
+	}
 	
 	private void checkGreenCertificate() {
 		if(user.getSecondDose() > 0) {

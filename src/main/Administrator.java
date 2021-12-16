@@ -89,8 +89,47 @@ public class Administrator {
 		return stat;
 	}
 
-	public String getNumbersPerManufacturer() {
-		return null;
+	public String getNumbersPerManufacturer() throws SQLException {
+		String sql = "SELECT drugaDoza FROM korisnici";
+		int pfizer = 0;
+		int astra=0;
+		int sino = 0;
+		int sputn = 0;
+		
+		PreparedStatement statement = dbConnection.prepareStatement(sql);
+		ResultSet result = statement.executeQuery();
+		
+		while(result.next()) {
+			switch (result.getInt(1)) {
+				case 1:
+					pfizer++;
+					break;
+				case 2:
+					sputn++;
+					break;
+				case 3:
+					sino++;
+					break;
+				case 4:
+					astra++;
+					break;
+					
+			}
+		}
+		
+		String format = "%-20s%-13s%-13s%-13s%-1s";
+		String ulepsavanje="*";
+		for(int i=1;i<=59;i++) {
+			ulepsavanje+="*";
+		}
+		
+		String statistic =ulepsavanje+"\n" +String.format(format, "Pfizer-BioNTech:","Sputnik V:","Sinopharm:","AstraZeneca:","*")+"\n"
+				+String.format(format, "---------------","---------","---------","-----------","*")+"\n"+
+				String.format(format, String.valueOf(pfizer),String.valueOf(sputn),String.valueOf(sino),String.valueOf(astra),"*")+"\n"+
+				ulepsavanje;
+		
+		return statistic;
+		
 	}
 	
 	private String getNumberOfDoses(ResultSet result) throws SQLException {
