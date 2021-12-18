@@ -1,5 +1,7 @@
 package main;
 
+import java.util.GregorianCalendar;
+
 public class User {
 
 	private String username;
@@ -12,11 +14,15 @@ public class User {
 	private int firstDose;
 	private int secondDose;
 	private int thirdDose;
+	private GregorianCalendar firstDate;
+	private GregorianCalendar secondDate;
+	private GregorianCalendar thirdDate;
 
 	
 	
 	public User(String username, String password, String name, String surname, String personalID, String gender,
-			String email, int firstDose, int secondDose, int thirdDose) {
+			String email, int firstDose, int secondDose, int thirdDose, GregorianCalendar firstDate,
+			GregorianCalendar secondDate, GregorianCalendar thirdDate) {
 		super();
 		this.username = username;
 		this.password = password;
@@ -28,7 +34,41 @@ public class User {
 		this.firstDose = firstDose;
 		this.secondDose = secondDose;
 		this.thirdDose = thirdDose;
+		this.firstDate = firstDate;
+		this.secondDate = secondDate;
+		this.thirdDate = thirdDate;
 	}
+
+
+	public GregorianCalendar getFirstDate() {
+		return firstDate;
+	}
+
+
+	public void setFirstDate(GregorianCalendar firstDate) {
+		this.firstDate = firstDate;
+	}
+
+
+	public GregorianCalendar getSecondDate() {
+		return secondDate;
+	}
+
+
+	public void setSecondDate(GregorianCalendar secondDate) {
+		this.secondDate = secondDate;
+	}
+
+
+	public GregorianCalendar getThirdDate() {
+		return thirdDate;
+	}
+
+
+	public void setThirdDate(GregorianCalendar thirdDate) {
+		this.thirdDate = thirdDate;
+	}
+
 
 	public void setUsername(String username) {
 		this.username = username;
@@ -82,12 +122,16 @@ public class User {
 		this.email = email;
 	}
 
+	
+
 	@Override
 	public String toString() {
 		return "User [username=" + username + ", password=" + password + ", name=" + name + ", surname=" + surname
 				+ ", personalID=" + personalID + ", gender=" + gender + ", email=" + email + ", firstDose=" + firstDose
-				+ ", secondDose=" + secondDose + ", thirdDose=" + thirdDose + "]";
+				+ ", secondDose=" + secondDose + ", thirdDose=" + thirdDose + ", firstDate=" + firstDate.getTime()
+				+ ", secondDate=" + secondDate.getTime() + ", thirdDate=" + thirdDate.getTime() + "]";
 	}
+
 
 	public int getFirstDose() {
 		return firstDose;

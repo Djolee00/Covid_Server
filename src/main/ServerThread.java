@@ -559,6 +559,7 @@ public class ServerThread extends Thread {
 			
 				if(isReturn(choice)) {
 					clientOutput.println("\n\n");
+					user=null;
 					menu();
 					return null;
 				}
@@ -582,6 +583,7 @@ public class ServerThread extends Thread {
 			
 				if(isReturn(choice)) {
 					clientOutput.println("\n\n");
+					user=null;
 					menu();
 					return null;
 				}
@@ -614,6 +616,7 @@ public class ServerThread extends Thread {
 			
 				if(isReturn(choice)) {
 					clientOutput.println("\n\n");
+					user = null;
 					menu();
 					return null;
 				}
@@ -691,6 +694,7 @@ public class ServerThread extends Thread {
 			
 			}while(!valid);
 			
+			
 			userProfileMenu();
 		} catch (IOException e) {
 			System.err.println("Error while getting client input in Login menu");
@@ -702,8 +706,9 @@ public class ServerThread extends Thread {
 	}
 	
 	//***USER PROFILE***
-
 	private void userProfileMenu() {
+		if(communicationSocket==null || communicationSocket.isClosed())
+			return;
 		
 		clientOutput.println("\n\n***WELCOME***\n");
 		clientOutput.println("Your personal data:");
@@ -726,7 +731,7 @@ public class ServerThread extends Thread {
 		clientOutput.println(String.format(format2, "First Dose:","Second Dose:","Third Dose:","|")+"\n"
 				+String.format(format2, "----------","-----------","----------","|")+
 				"\n"+String.format(format2,getVaccine(user.getFirstDose()),getVaccine(user.getSecondDose()),getVaccine(user.getThirdDose()),"|")+"\n"+
-				ulepsavanje2);
+				String.format(format2, getDate(user.getFirstDate()),getDate(user.getSecondDate()),getDate(user.getThirdDate()),"|")+"\n"+ulepsavanje2);
 	
 		
 		String choice = null;
@@ -783,12 +788,13 @@ public class ServerThread extends Thread {
 		}
 	
 	}
-	
+
 	//***ANSWER CHANGE MENU***
 	private void answerChangeMenu() {
 		int choice = 0;
 		String secondChoice = null;
 		boolean valid = false;
+		GregorianCalendar date = null;
 		
 		//FIRST QUESTION
 		if(user.getFirstDose() == 0) {
@@ -807,11 +813,20 @@ public class ServerThread extends Thread {
 			if(choice == 0) {
 				return;
 			}else {
-				updateFirstDose(choice);
-				user.setFirstDose(choice);
+				try {
+					date = enterDate(1, null, null);
+					if(date == null)
+						return;
+					updateFirstDose(choice,date);
+					user.setFirstDose(choice);
+					user.setFirstDate(date);
+				} catch (IOException e) {
+					System.err.println("Error while getting client input");
+					closeCommunication();
+				}
 			}
 		}
-		
+		date = null;
 		//SECOND QUESTION
 		if(user.getSecondDose() == 0) {
 			clientOutput.println("\n***SECOND DOSE***");
@@ -836,7 +851,11 @@ public class ServerThread extends Thread {
 						case "1":
 							valid=true;
 							user.setSecondDose(user.getFirstDose());
-							updateSecondDose();
+							date = enterDate(2, user.getFirstDate(), null);
+							if(date == null)
+								return;
+							user.setSecondDate(date);
+							updateSecondDose(date);
 							break;
 						case "2":
 							valid = true;
@@ -852,6 +871,7 @@ public class ServerThread extends Thread {
 		}
 		
 		choice = 0;
+		date = null;
 		//THIRD QUESTION
 		if(user.getSecondDose()>0 && user.getThirdDose() == 0) {
 			clientOutput.println("\n***THIRD DOSE***");
@@ -869,8 +889,18 @@ public class ServerThread extends Thread {
 			if(choice == 0) {
 				return;
 			}else {
-				updateThirdDose(choice);
-				user.setThirdDose(choice);
+				try {
+					date = enterDate(3, user.getFirstDate(), user.getSecondDate());
+					if(date == null)
+						return;
+					updateThirdDose(choice,date);
+					user.setThirdDose(choice);
+					user.setThirdDate(date);
+				} catch (IOException e) {
+					System.err.println("Error while getting client input");
+					closeCommunication();
+				}
+				
 			}
 		}
 		if(user.getThirdDose()>0) {
@@ -929,12 +959,22 @@ public class ServerThread extends Thread {
 	}
 
 
+	//***GET VACC. DATE***
+	private String getDate(GregorianCalendar date) {
+		if(date == null) {
+			return "---";
+		}
+		SimpleDateFormat formatter= new SimpleDateFormat("dd.MM.yyyy.");
+		return formatter.format(date.getTime());
+	}
+
 	//***WORK WITH DATABASE***
-	private void updateThirdDose(int choice) {
-		String sql = "UPDATE korisnici SET trecaDoza=? WHERE username=?";
+	private void updateThirdDose(int choice, GregorianCalendar date) {
+		String sql = "UPDATE korisnici SET trecaDoza=?, trecaDatum=? WHERE username=?";
 		try(PreparedStatement statement = dbConnection.prepareStatement(sql)){
-			statement.setString(2, user.getUsername());
+			statement.setString(3, user.getUsername());
 			statement.setInt(1, choice);
+			statement.setDate(2, new Date(date.getTimeInMillis()));
 			
 			int row=statement.executeUpdate();
 			if(row>0) {
@@ -947,11 +987,12 @@ public class ServerThread extends Thread {
 		}
 	}
 	
-	private void updateSecondDose() {
-		String sql = "UPDATE korisnici SET drugaDoza=? WHERE username=?";
+	private void updateSecondDose(GregorianCalendar date) {
+		String sql = "UPDATE korisnici SET drugaDoza=?, drugaDatum=? WHERE username=?";
 		try(PreparedStatement statement = dbConnection.prepareStatement(sql)){
-			statement.setString(2, user.getUsername());
+			statement.setString(3, user.getUsername());
 			statement.setInt(1, user.getSecondDose());
+			statement.setDate(2, new Date(date.getTimeInMillis()));
 			
 			int row=statement.executeUpdate();
 			if(row>0) {
@@ -965,11 +1006,12 @@ public class ServerThread extends Thread {
 		
 	}
 	
-	private void updateFirstDose(int choice) {
-		String sql = "UPDATE korisnici SET prvaDoza=? WHERE username=?";
+	private void updateFirstDose(int choice, GregorianCalendar date) {
+		String sql = "UPDATE korisnici SET prvaDoza=?, prvaDatum=? WHERE username=?";
 		try(PreparedStatement statement = dbConnection.prepareStatement(sql)){
-			statement.setString(2, user.getUsername());
+			statement.setString(3, user.getUsername());
 			statement.setInt(1, choice);
+			statement.setDate(2, new Date(date.getTimeInMillis()));
 			
 			int row=statement.executeUpdate();
 			if(row>0) {
@@ -991,7 +1033,22 @@ public class ServerThread extends Thread {
 			
 			if(result.next()) {
 				user = new User(result.getString(1), result.getString(2), result.getString(3), 
-						result.getString(4), result.getString(5),result.getString(6), result.getString(7),result.getInt(8), result.getInt(9),result.getInt(10));
+						result.getString(4), result.getString(5),result.getString(6), result.getString(7),result.getInt(8), result.getInt(9),result.getInt(10),null,null,null);
+				if(user.getFirstDose()>0) {
+					GregorianCalendar date=new GregorianCalendar();
+					date.setTime(result.getDate(11));
+					user.setFirstDate(date);
+					if(user.getSecondDose()>0) {
+						date = new GregorianCalendar();
+						date.setTime(result.getDate(12));
+						user.setSecondDate(date);
+						if(user.getThirdDose()>0) {
+							date = new GregorianCalendar();
+							date.setTime(result.getDate(13));
+							user.setThirdDate(date);
+						}
+					}
+				}
 			}
 			
 		} catch (SQLException e) {
