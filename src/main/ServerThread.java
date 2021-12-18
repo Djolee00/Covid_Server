@@ -7,10 +7,15 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
 
 public class ServerThread extends Thread {
 
@@ -277,23 +282,26 @@ public class ServerThread extends Thread {
 	
 	// ***REGISTER MENU***
 	private void registerMenu() {
-		String username;
-		String password;
+		String username = null;
+		String password=null;
 		String name=null;
 		String surname=null;
-		String personalID;
-		String gender;
-		String email;
+		String personalID=null;
+		String gender=null;
+		String email=null;
 		boolean valid = false;
 		int firstDose =0;
 		int secondDose = 0;
 		int thirdDose = 0;
+		GregorianCalendar firstDate = null;
+		GregorianCalendar secondDate = null;
+		GregorianCalendar thirdDate = null;
 
 		clientOutput.println("\n\n***WELCOME, PLEASE FILL REGISTRATION FORM***");
 
 		try {
 			do {
-				clientOutput.println("Enter username(without spaces): ");
+				clientOutput.println("Enter username (without spaces): ");
 				username = clientInput.readLine();
 
 				if (isExit(username)) {
@@ -462,13 +470,19 @@ public class ServerThread extends Thread {
 				menu();
 				return;
 			}
-
+			
 			valid =false;
+			
 			if(firstDose > 0) {
+				String choice;
+				valid=false;
+				firstDate = enterDate(1,firstDate,secondDate);
+				if(firstDate == null)
+					return;
+				
 				clientOutput.println("***SECOND DOSE***\n");
 				clientOutput.println("Have you been vaccinated with second dose?"
 						+ "\n\n1.Yes\n2.No");
-				String choice;
 				do {
 					clientOutput.println("Answer: ");
 					choice=clientInput.readLine();
@@ -486,6 +500,9 @@ public class ServerThread extends Thread {
 							case "1":
 								valid=true;
 								secondDose = firstDose;
+								secondDate = enterDate(2,firstDate,secondDate);
+								if(secondDate == null)
+									return;
 								break;
 							case "2":
 								valid = true;
@@ -497,6 +514,7 @@ public class ServerThread extends Thread {
 			}
 			
 			if(secondDose>0) {
+				
 				clientOutput.println("***THIRD DOSE***\n");
 				thirdDose = vaccineChoiceMenu();
 				if(thirdDose == -1) {
@@ -508,9 +526,15 @@ public class ServerThread extends Thread {
 					menu();
 					return;
 				}
+				
+				if(thirdDose>0) {
+					thirdDate = enterDate(3, firstDate, secondDate);
+					if(thirdDate == null)
+						return;
+				}
 			}
 			
-			addUserInDatabase(username,password,name,surname,personalID,gender,email,firstDose,secondDose,thirdDose);
+			addUserInDatabase(username,password,name,surname,personalID,gender,email,firstDose,secondDose,thirdDose,firstDate,secondDate,thirdDate);
 			menu();
 		} catch (IOException ex) {
 			System.err.println("Error while getting client input in Register Menu");
@@ -518,6 +542,111 @@ public class ServerThread extends Thread {
 		}
 	}
 	
+	//***ENTER DATE METHOD***
+	private GregorianCalendar enterDate(int dose,GregorianCalendar first,GregorianCalendar second) throws IOException {
+		String choice=null;
+		boolean valid = false;
+		GregorianCalendar dateOfDose = null;
+		
+		if(dose == 1) {
+			do {
+				clientOutput.println("Enter date of vaccination in 2021.(dd/MM/yyyy): ");
+				choice = clientInput.readLine();
+
+				if (isExit(choice)) {
+					return null;
+				}
+			
+				if(isReturn(choice)) {
+					clientOutput.println("\n\n");
+					menu();
+					return null;
+				}
+			
+				if(isDateValid(choice)) {
+					valid = true;
+				}else {
+					clientOutput.println("Invalid date format. Try again!");
+				}
+			}while(!valid);
+		}
+		
+		if(dose == 2) {
+			do {
+				clientOutput.println("Enter date of second vaccination in 2021.(dd/MM/yyyy): ");
+				choice = clientInput.readLine();
+
+				if (isExit(choice)) {
+					return null;
+				}
+			
+				if(isReturn(choice)) {
+					clientOutput.println("\n\n");
+					menu();
+					return null;
+				}
+			
+				if(!isDateValid(choice)) {
+					clientOutput.println("Invalid date format. Try again!");
+					continue;
+				}
+				
+				dateOfDose = giveDateOfVaccination(choice);
+				
+				if(isThreeWeekAfter(first,dateOfDose)) {
+					break;
+				}else {
+					clientOutput.println("Second dose must be at least 3 weeks after first. Try again!");
+					dateOfDose=null;
+					continue;
+				}
+			}while(true);
+		}
+		
+		if(dose == 3) {
+			do {
+				clientOutput.println("Enter date of third vaccination in 2021.(dd/MM/yyyy): ");
+				choice = clientInput.readLine();
+
+				if (isExit(choice)) {
+					return null;
+				}
+			
+				if(isReturn(choice)) {
+					clientOutput.println("\n\n");
+					menu();
+					return null;
+				}
+			
+				if(!isDateValid(choice)) {
+					clientOutput.println("Invalid date format. Try again!");
+					continue;
+				}
+				
+				dateOfDose = giveDateOfVaccination(choice);
+				if(isSixMonthsAfter(second,dateOfDose)) {
+					break;
+				}else {
+					clientOutput.println("Third dose must be at least 6 months after second. Try again!");
+					dateOfDose = null;
+					continue;
+				}
+			}while(true);
+		}
+		
+		return giveDateOfVaccination(choice);
+	}
+	
+
+	//***METHOD TO CONVERT STRING TO VACC. DATE***
+	private GregorianCalendar giveDateOfVaccination(String choice) {
+		String [] s = choice.split("/");
+		int day = Integer.parseInt(s[0]);
+		int month = Integer.parseInt(s[1])-1;
+		int year = Integer.parseInt(s[2]);
+		return  new GregorianCalendar(year, month, day);
+	}
+
 	//***LOGIN MENU***
 	private void logInMenu() {
 		String username;
@@ -759,10 +888,11 @@ public class ServerThread extends Thread {
 				+ "\n0.Vaccine not received\n\n");
 		
 		String choice;
-		do {
+		try{
+			do {
 			clientOutput.println("Answer: ");
 			
-			try {
+			
 				choice = clientInput.readLine();
 				
 				if(isExit(choice)) {
@@ -790,13 +920,12 @@ public class ServerThread extends Thread {
 						break;				
 					}
 				}
-			} catch (IOException e) {
-				System.err.println("Error while getting client input in Vaccine Choice Menu");
-				closeCommunication();
-			}
-	
-		}while(true);
-		
+			}while(true);
+		} catch (IOException e) {
+			System.err.println("Error while getting client input in Vaccine Choice Menu");
+			closeCommunication();
+			return -1;
+		}
 	}
 
 
@@ -872,9 +1001,12 @@ public class ServerThread extends Thread {
 	}
 	
 	private void addUserInDatabase(String username, String password, String name, String surname, String personalID,
-			String gender, String email, int firstDose, int secondDose, int thirdDose) {
-		String sqlInsert = "INSERT INTO korisnici (username,password,ime,prezime,JMBG,pol,email,prvaDoza,drugaDoza,trecaDoza) "
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?)";
+			String gender, String email, int firstDose, int secondDose, int thirdDose,GregorianCalendar firstDate,GregorianCalendar secondDate
+			,GregorianCalendar thirdDate) {
+		String sqlInsert = "INSERT INTO korisnici (username,password,ime,prezime,JMBG,pol,email,prvaDoza,drugaDoza,trecaDoza,prvaDatum,drugaDatum,trecaDatum) "
+				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	
+		
 		try (PreparedStatement statement = dbConnection.prepareStatement(sqlInsert)){
 			statement.setString(1, username);
 			statement.setString(2, password);
@@ -886,6 +1018,28 @@ public class ServerThread extends Thread {
 			statement.setInt(8, firstDose);
 			statement.setInt(9, secondDose);
 			statement.setInt(10, thirdDose);
+			
+			if(firstDate == null) {
+				statement.setNull(11, java.sql.Types.DATE);
+				statement.setNull(12, java.sql.Types.DATE);
+				statement.setNull(13, java.sql.Types.DATE);
+			}else {
+				statement.setDate(11, new Date(firstDate.getTimeInMillis()));
+				
+				if(secondDate == null) {
+					statement.setNull(12, java.sql.Types.DATE);
+					statement.setNull(13, java.sql.Types.DATE);
+				}else {
+					statement.setDate(12, new Date(secondDate.getTimeInMillis()));
+					
+					if(thirdDate == null) {
+						statement.setNull(13, java.sql.Types.DATE);
+					}else {
+						statement.setDate(13, new Date(thirdDate.getTimeInMillis()));
+					}
+				}
+			}
+			
 			
 			int rowCount = statement.executeUpdate();
 			
@@ -952,7 +1106,18 @@ public class ServerThread extends Thread {
 	// ***CHECK Methods***
 	
 	private boolean isDateValid(String s) {
-		return false;
+		DateFormat checker = new  SimpleDateFormat("dd/MM/yyyy");
+		checker.setLenient(false);
+		try {
+			checker.parse(s);
+			String[] splitS = s.split("/");
+			if(Integer.parseInt(splitS[2]) != 2021)
+				return false;
+		}catch(ParseException e) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 	private void checkGreenCertificate() {
@@ -977,6 +1142,21 @@ public class ServerThread extends Thread {
 	
 	private boolean isReturn(String s) {
 		return s == null || s.startsWith("***return");
+	}
+	
+	private boolean isThreeWeekAfter(GregorianCalendar first, GregorianCalendar dateOfDose) {
+
+		GregorianCalendar var = new GregorianCalendar(first.get(GregorianCalendar.YEAR),first.get(GregorianCalendar.MONTH),first.get(GregorianCalendar.DAY_OF_MONTH));
+		var.add(GregorianCalendar.DAY_OF_MONTH, 21);
+		
+		return dateOfDose.after(var);
+		
+	}
+	
+	private boolean isSixMonthsAfter(GregorianCalendar second, GregorianCalendar dateOfDose) {
+		GregorianCalendar var = new GregorianCalendar(second.get(GregorianCalendar.YEAR),second.get(GregorianCalendar.MONTH),second.get(GregorianCalendar.DAY_OF_MONTH));
+		var.add(GregorianCalendar.MONTH, 6);
+		return dateOfDose.after(var);
 	}
 	
 	//***GET VACCINE***
