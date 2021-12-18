@@ -2,9 +2,13 @@ package main;
 
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.Date;
@@ -738,7 +742,8 @@ public class ServerThread extends Thread {
 		boolean isValid = false;
 		clientOutput.println("1.Change my answers\n"
 				+ "2.Check my green certificate status\n"
-				+ "3.Log out\n"
+				+ "3.Generate my green certificate\n"
+				+ "4.Log out\n"
 				+"Choose:");
 		
 		try {
@@ -758,7 +763,7 @@ public class ServerThread extends Thread {
 			}
 			
 			if(choice!=null)
-				if(choice.equals("1") || choice.equals("2") || choice.equals("3")){
+				if(choice.equals("1") || choice.equals("2") || choice.equals("3") || choice.equals("4")){
 					isValid = true;
 				}else {
 					clientOutput.println("Invalid input try again");
@@ -781,12 +786,59 @@ public class ServerThread extends Thread {
 					userProfileMenu();
 					break;
 				case "3":
+					generateCovidCertificate();
+					userProfileMenu();
+					break;
+				case "4":
 					user=null;
 					menu();
 					return;		
 			}
 		}
 	
+	}
+
+	//***GENERATE COVID GREEN CERTIFICATE***
+	private void generateCovidCertificate() {
+		if(user.getSecondDose() == 0) {
+			clientOutput.println(user.getName()+", you don't possess green certificate");
+			return;
+		}
+		
+		String fileName = user.getName()+user.getSurname()+".txt";
+		try(FileWriter fOut=new FileWriter(new File("./certificates",fileName));
+				BufferedWriter bwOut = new BufferedWriter(fOut);
+				PrintWriter pOut = new PrintWriter(bwOut)){
+				
+				String naslov = "*************************GREEN CERTIFICATE*************************\n\n";
+				String format = "%-10s%-15s%-20s%-1s";
+				String ulepsavanje="";
+				for(int i =1;i<=46;i++) {
+					ulepsavanje+="=";
+				}
+				String ulepsavanje2="";
+				for(int i=1;i<=75;i++) {
+					ulepsavanje2+="=";
+				}
+				String text = ulepsavanje+"\n"+String.format(format, "Name:","Surname:","Personal ID:","*")+"\n"+
+							String.format(format, "----","-------","-----------","*")+"\n"+
+							String.format(format, user.getName(),user.getSurname(),user.getPersonalID(),"*")+"\n"+ulepsavanje2;
+				
+				String format2 = "%-25s%-25s%-25s%-1s";
+				
+				String text2 = String.format(format2, "First Dose:","Second Dose:","Third Dose:","*")+"\n"
+						+String.format(format2, "----------","-----------","----------","*")+
+						"\n"+String.format(format2,getVaccine(user.getFirstDose()),getVaccine(user.getSecondDose()),getVaccine(user.getThirdDose()),"*")+"\n"+
+						String.format(format2, getDate(user.getFirstDate()),getDate(user.getSecondDate()),getDate(user.getThirdDate()),"*")+"\n"+ulepsavanje2;
+				
+				pOut.println(naslov);
+				pOut.println(text);
+				pOut.println(text2);
+			
+				clientOutput.println("Green certificate has been generated!");
+		}catch (Exception e) {
+			clientOutput.println("Error while generating green certificate!");
+		}
 	}
 
 	//***ANSWER CHANGE MENU***
