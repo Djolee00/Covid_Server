@@ -1,7 +1,7 @@
 
 # Vaccination monitoring system - SERVER
 
-This is a server side for console application with client/server architecture. It can communicate and deal with multiple users at the same time. Depending on the choices entered by client, it shows different menus and takes various actions. Evry time the server is started, server connects to hosted MySQL database.
+This is a server side for console application with client/server architecture. It can communicate and deal with multiple users at the same time. Depending on the choices entered by client, it shows different menus and takes various actions. Eevry time the server is started, server connects to hosted MySQL database.
 
 
 ## Features
