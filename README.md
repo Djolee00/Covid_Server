@@ -8,6 +8,7 @@ This is a server side for console application with client/server architecture. I
 
 - Communication with multiple clients at the same time
 - Communication with MySQL database (search, update..)
+- Covid certificate generation (.txt file)
 - Every exception is handled
 - Every communication is handled in separete thread
 
