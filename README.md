@@ -38,4 +38,4 @@ Start the client in any IDE for Java
 
 ## Purpose 
 
-The main purpose of this application was to learn how to use sockets and manage TCP communcation between client and server. Server can communicate in the same time with multiple clients. Also every exception is carefully handled. I was dealing with MySQL databsase for the first time and it was also a grate challange.
+The main purpose of this application was to learn how to use sockets and manage TCP communcation between client and server. Server can communicate in the same time with multiple clients. Also every exception is carefully handled. I was dealing with MySQL databsase for the first time and it was also a great challange.
