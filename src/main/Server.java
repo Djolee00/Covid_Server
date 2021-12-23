@@ -17,7 +17,10 @@ public class Server {
 		String jdbcURL = "jdbc:mysql://sql11.freemysqlhosting.net:3306/sql11456529";
 		String username = "sql11456529";
 		String password = "sfrh9mlXtW";
-		Connection dbConnection = null;
+		
+//		String jdbcURL = "jdbc:mysql://localhost:3306/baza";
+//		String username = "root";
+//		String password = "pluralsight";
 		
 		int port = 3333;
 		ServerSocket welcomeSocket=null;
